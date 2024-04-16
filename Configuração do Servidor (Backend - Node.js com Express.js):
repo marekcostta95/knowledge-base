@@ -1,0 +1,52 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
+const cors = require('cors');
+
+const app = express();
+app.use(bodyParser.json());
+app.use(cors());
+
+// Conexão com o banco de dados MongoDB
+mongoose.connect('mongodb://localhost/knowledgebase', { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connection.once('open', () => {
+    console.log('Conexão com o MongoDB estabelecida com sucesso!');
+});
+
+// Definindo o modelo de dados para os artigos
+const articleSchema = new mongoose.Schema({
+    title: String,
+    content: String,
+    category: String,
+    tags: [String],
+    date: { type: Date, default: Date.now }
+});
+const Article = mongoose.model('Article', articleSchema);
+
+// Rota para adicionar um novo artigo
+app.post('/articles', async (req, res) => {
+    try {
+        const { title, content, category, tags } = req.body;
+        const newArticle = new Article({ title, content, category, tags });
+        await newArticle.save();
+        res.status(201).json(newArticle);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
+// Rota para buscar todos os artigos
+app.get('/articles', async (req, res) => {
+    try {
+        const articles = await Article.find();
+        res.json(articles);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Iniciar o servidor
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+    console.log(`Servidor rodando na porta ${port}`);
+});
